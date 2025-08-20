@@ -1,0 +1,37 @@
+buildscript {
+  repositories {
+    mavenCentral()
+    google()
+    gradlePluginPortal()
+  }
+  dependencies {
+    // This provides the Android plugin for the :client:android module
+    classpath "com.android.tools.build:gradle:8.4.1"
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.23"
+  }
+}
+
+// This block provides common settings for all the client sub-modules
+subprojects {
+  version = "1.0.0" // setting this as my first version
+  ext.appName = 'GhostDuelRPG'
+
+  repositories {
+    mavenCentral()
+    maven { url 'https://s01.oss.sonatype.org' }
+    google()
+    mavenLocal()
+  }
+}
+
+// This block configures all client modules EXCEPT android as it has entirely different structure and will be handled specifically by client\android\build.gradle
+configure(subprojects - project(':client:android')) {
+  apply plugin: 'java-library'
+  apply plugin: 'kotlin'
+
+  sourceCompatibility = 11 // here we had to downgrade the java version to 11 as the web (html) uses google web toolkit which is not up to date and only supports upto java 11.
+
+  compileJava {
+    options.incremental = true
+  }
+}
