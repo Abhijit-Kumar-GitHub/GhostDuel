@@ -1,3 +1,6 @@
+apply plugin: 'java-library'
+apply plugin: 'kotlin'
+
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
 dependencies {
