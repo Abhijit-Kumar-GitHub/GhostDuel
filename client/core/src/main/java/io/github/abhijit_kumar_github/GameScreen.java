@@ -4,20 +4,29 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class GameScreen implements Screen {
+    // Game objects
     private Player player;
-    private ShapeRenderer shapeRenderer;
+
+    // Rendering tools
     private OrthographicCamera camera;
     private Viewport viewport;
+    private SpriteBatch batch;              // Using SpriteBatch to draw all our game textures
 
-    // New variable to control the game's downward scroll speed
-    private float scrollSpeed = 150f; // Speed in pixels per second
+    // Textures
+    private Texture roadTexture;
+    private Texture playerTexture;          // Added a texture for our player character
+
+    // Game state variables
+    private float scrollSpeed = 100f;       // Speed in pixels per second
+    private float roadYScroll = 0;
 
     public GameScreen() {
         // Initialize the camera
@@ -26,11 +35,17 @@ public class GameScreen implements Screen {
         // Initialize the viewport, telling it the size of our virtual world
         viewport = new FitViewport(GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT, camera);
 
+        // Initialize the SpriteBatch and load all textures
+        batch = new SpriteBatch();
+        roadTexture = new Texture("road_fullsize.png");         // Use the road texture name
+        playerTexture = new Texture("player_ghost.png");        // Use the player texture name
+
+        // This is the crucial line for infinite scrolling
+        roadTexture.setWrap(Texture.TextureWrap.ClampToEdge, Texture.TextureWrap.Repeat);
+
         // Use GameConfig to center the player on the road
         float startX = GameConfig.ROAD_LEFT_BOUNDARY + (GameConfig.ROAD_WIDTH - Player.WIDTH) / 2;
         player = new Player(startX, 50);
-        shapeRenderer = new ShapeRenderer();
-
     }
 
     @Override
@@ -40,30 +55,50 @@ public class GameScreen implements Screen {
 
         // 2. Update Game State
         player.update(delta);
+        camera.update();    // It's important to update the camera every frame
 
-        // In the future, obstacles will be updated here, moving down at scrollSpeed
+        // This line updates our road's vertical scroll position
+        roadYScroll -= scrollSpeed * delta;
+        roadYScroll %= roadTexture.getHeight();
 
         // 3. Render Graphics
         ScreenUtils.clear(Color.BLACK); // Clear the screen
 
-        // Tell the ShapeRenderer to use our camera's coordinate system
-        shapeRenderer.setProjectionMatrix(camera.combined);
+        // Tell the SpriteBatch to use our camera's coordinate system
+        batch.setProjectionMatrix(camera.combined);
 
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        // Begin drawing with the SpriteBatch
+        batch.begin();
 
-        // to change the color of the road (will later on choose colors or the texture, currently making do with the basic shapes filled with color
-        shapeRenderer.setColor(Color.DARK_GRAY);
-        shapeRenderer.rect(GameConfig.ROAD_LEFT_BOUNDARY, 0, GameConfig.ROAD_WIDTH, GameConfig.WORLD_HEIGHT);
+        // Set color to white to ensure no tint is applied to the road
+        batch.setColor(Color.WHITE);
 
-        // Change player color when dematerialized to give visual feedback
+        // This version explicitly uses integer pixel coordinates (srcX, srcY, srcWidth, srcHeight)
+        // and adds the final two 'flip' booleans, ensuring we call the correct method.
+        batch.draw(
+            roadTexture,
+            GameConfig.ROAD_LEFT_BOUNDARY, 0,                                          // Position on screen (x, y)
+            GameConfig.ROAD_WIDTH, GameConfig.WORLD_HEIGHT,                            // Size on screen (width, height)
+            0, (int) roadYScroll,                                                      // The slice's top-left corner on the texture (srcX, srcY)
+            (int) GameConfig.ROAD_WIDTH, (int) GameConfig.WORLD_HEIGHT,                // The slice's dimensions on the texture (srcWidth, srcHeight)
+            false, false                                                               // Don't flip the texture horizontally or vertically
+        );
+
+
+        // Change player color and opacity when dematerialized to give visual feedback
         if (player.dematerialized) {
-            shapeRenderer.setColor(Color.CYAN); // Ghostly color
+            // Set a ghostly cyan color with 50% transparency (r, g, b, alpha)
+            batch.setColor(0.5f, 0.8f, 1f, 0.5f);
         } else {
-            shapeRenderer.setColor(Color.WHITE);
+            // Reset to default white with full opacity
+            batch.setColor(Color.WHITE);
         }
 
-        shapeRenderer.rect(player.bounds.x, player.bounds.y, player.bounds.width, player.bounds.height);
-        shapeRenderer.end();
+        // Draw the player texture onto the player's bounds
+        batch.draw(playerTexture, player.bounds.x, player.bounds.y, player.bounds.width, player.bounds.height);
+
+        // End drawing with the SpriteBatch
+        batch.end();
     }
 
     private void handleInput() {
@@ -84,19 +119,21 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-        shapeRenderer.dispose();
+        // Dispose of all our textures and the batch to prevent memory leaks
+        batch.dispose();
+        roadTexture.dispose();
+        playerTexture.dispose();
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        // Update the viewport with the new screen size
+        viewport.update(width, height, true);
     }
 
     // Other required methods remain empty for now
     @Override
     public void show() {}
-
-    @Override
-    public void resize(int width, int height) {
-        // Update the viewport with the new screen size (to update viewport whenever the screensize changes (automatically at start and when we change screen size )
-        viewport.update(width, height, true);
-    }
-
     @Override
     public void pause() {}
     @Override
