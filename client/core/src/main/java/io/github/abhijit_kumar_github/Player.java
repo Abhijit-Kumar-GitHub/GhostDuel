@@ -25,6 +25,10 @@ public class Player {
         // Update horizontal position
         bounds.x += velocity.x * deltaTime;
 
+        // Constrain the player to the road boundaries
+        bounds.x = Math.max(GameConfig.ROAD_LEFT_BOUNDARY, bounds.x); // Prevent moving too far left
+        bounds.x = Math.min(GameConfig.ROAD_RIGHT_BOUNDARY, bounds.x); // Prevent moving too far right
+
         // Handle dematerialize timer
         if (dematerialized) {
             dematerializeTimer -= deltaTime;
