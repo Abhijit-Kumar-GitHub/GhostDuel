@@ -6,7 +6,6 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
-import java.util.Iterator;
 import java.util.Random;
 
 public class EnemyManager {
@@ -63,6 +62,22 @@ public class EnemyManager {
         }
 
         enemies.add(new Enemy(spawnX, spawnY));
+    }
+
+    /**
+     * Returns the list of active enemies for collision detection.
+     * This was the missing piece for the Game Over logic.
+     * @return The array of active enemies.
+     */
+    public Array<Enemy> getEnemies() {
+        return enemies;
+    }
+
+    /**
+     * Clears all enemies from the manager, used for restarting the game.
+     */
+    public void clear() {
+        enemies.clear();
     }
 
     public void dispose() {
